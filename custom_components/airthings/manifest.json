@@ -1,0 +1,10 @@
+{
+  "domain": "airthings",
+  "name": "Airthings",
+  "config_flow": true,
+  "dependencies": [],
+  "codeowners": [
+    "siku2"
+  ],
+  "requirements": []
+}

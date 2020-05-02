@@ -1,4 +1,3 @@
-import abc
 import asyncio
 import dataclasses
 import logging
@@ -7,83 +6,71 @@ from typing import Optional
 
 import aiohttp
 
-from .consts import TOKEN_URL
+from .consts import LOGIN_URL, REFRESH_URL
 from .errors import APIError
+from .types import JSONObj
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["LoginDetails", "TokenDetails",
-           "AuthManagerABC", "AuthManager"]
+__all__ = ["LoginDetails", "TokenDetails", "AuthManager"]
 
 
 @dataclasses.dataclass()
 class LoginDetails:
-    username: str
+    email: str
     password: str
+
+    def _payload(self) -> JSONObj:
+        return {"email": self.email, "password": self.password}
 
 
 @dataclasses.dataclass()
 class TokenDetails:
     access_token: str
-    token_type: str
+    id_token: str
+    refresh_token: str
     expires_in: int
     expires_at: datetime = dataclasses.field(init=False)
 
     def __post_init__(self) -> None:
         self.expires_at = datetime.now() + timedelta(seconds=self.expires_in)
 
+    @classmethod
+    def from_payload(cls, payload: JSONObj):
+        return cls(
+            access_token=payload["accessToken"],
+            id_token=payload["idToken"],
+            refresh_token=payload["refreshToken"],
+            expires_in=payload["expiresIn"],
+        )
+
     @property
     def expired(self) -> bool:
         return datetime.now() >= self.expires_at
 
 
-async def auth_request(session: aiohttp.ClientSession, login: LoginDetails) -> TokenDetails:
-    logger.debug("performing auth request with %s", login)
-    body = {
-        "username": login.username,
-        "password": login.password,
-        "grant_type": "password",
-        "client_id": "accounts",
-    }
-    async with session.post(TOKEN_URL, json=body) as resp:
+async def refresh_request(session: aiohttp.ClientSession, token_details: TokenDetails) -> TokenDetails:
+    logger.debug("performing token refresh request with %s", token_details)
+    body = {"refreshToken": token_details.refresh_token}
+    async with session.post(REFRESH_URL, json=body) as resp:
         data = await resp.json()
         if resp.status != 200:
             raise APIError.from_response(resp, data)
 
-    return TokenDetails(**data)
+    return TokenDetails.from_payload(data)
 
 
-class AuthManagerABC(abc.ABC):
-    __slots__ = ()
+async def login_request(session: aiohttp.ClientSession, login: LoginDetails) -> TokenDetails:
+    logger.debug("performing login request with %s", login)
+    async with session.post(LOGIN_URL, json=login._payload()) as resp:
+        data = await resp.json()
+        if resp.status != 200:
+            raise APIError.from_response(resp, data)
 
-    @property
-    @abc.abstractmethod
-    def login_details(self) -> LoginDetails:
-        ...
-
-    @login_details.setter
-    @abc.abstractmethod
-    def login_details(self, value: LoginDetails) -> None:
-        ...
-
-    @abc.abstractmethod
-    async def force_renew_token(self) -> None:
-        ...
-
-    @abc.abstractmethod
-    async def maybe_renew_token(self) -> bool:
-        ...
-
-    @abc.abstractmethod
-    async def get_token_details(self) -> TokenDetails:
-        ...
-
-    @abc.abstractmethod
-    async def get_access_token(self) -> str:
-        ...
+    return TokenDetails.from_payload(data)
 
 
-class AuthManager(AuthManagerABC):
+class AuthManager:
     session: aiohttp.ClientSession
     _login: LoginDetails
     _token: Optional[TokenDetails]
@@ -111,13 +98,16 @@ class AuthManager(AuthManagerABC):
         return self._token is None or self._token.expired
 
     async def _force_renew_token(self) -> None:
-        self._token = await auth_request(self.session, self._login)
+        if self._token is None:
+            self._token = await login_request(self.session, self._login)
+        else:
+            self._token = await refresh_request(self.session, self._token)
 
     async def force_renew_token(self) -> None:
         async with self._lock:
             await self._force_renew_token()
 
-    async def maybe_renew_token(self) -> bool:
+    async def _maybe_renew_token(self) -> bool:
         async with self._lock:
             if not self._should_renew_token():
                 return False
@@ -126,7 +116,7 @@ class AuthManager(AuthManagerABC):
             return True
 
     async def get_token_details(self) -> TokenDetails:
-        await self.maybe_renew_token()
+        await self._maybe_renew_token()
         return self._token
 
     async def get_access_token(self) -> str:

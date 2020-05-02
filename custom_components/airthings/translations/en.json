@@ -1,0 +1,19 @@
+{
+  "config": {
+    "title": "Airthings",
+    "step": {
+      "user": {
+        "title": "Login",
+        "data": {
+          "api_key": "Api Key",
+          "email": "Email address",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "login_failed": "Login failed"
+    }
+  },
+  "title": "Airthings"
+}
