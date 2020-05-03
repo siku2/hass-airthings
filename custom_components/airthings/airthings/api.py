@@ -10,11 +10,13 @@ import aiohttp
 from .auth import AuthManager, LoginDetails
 from .consts import LATEST_SAMPLES_URL_TEMPLATE, SERIAL_NUMBERS_URL
 from .errors import APIError
+from .event_system import EventSystem
 from .types import JSONAny, JSONObj
 
 __all__ = ["Sensor", "SensorValue", "Sample",
            "DeviceInfo", "DeviceState",
-           "AirthingsAPI", ]
+           "AirthingsAPI",
+           "MODEL_WAVE_SN", "MODEL_MINI_SN", "MODEL_PLUS_SN", "MODEL_SECOND_GEN_SN"]
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +69,7 @@ class Sample:
     next_page_start: datetime
     more_data_available: bool
     offsets: List[List[timedelta]]
-    ids_for_offsets: List[List[int]]
+    ids_for_offsets: Optional[List[List[int]]]
     sensors: List[Sensor]
 
     @classmethod
@@ -84,7 +86,7 @@ class Sample:
             next_page_start=_parse_utc_dt(payload["nextPageStart"]),
             more_data_available=payload["moreDataAvailable"],
             offsets=[[timedelta(seconds=o) for o in t] for t in payload["offsets"]],
-            ids_for_offsets=payload["idsForOffsets"],
+            ids_for_offsets=payload.get("idsForOffsets"),
             sensors=[Sensor.from_payload(p) for p in payload["sensors"]],
         )
 
@@ -128,6 +130,19 @@ def create_session(api_key: str) -> aiohttp.ClientSession:
     })
 
 
+MODEL_WAVE_SN = "2900"
+MODEL_MINI_SN = "2920"
+MODEL_PLUS_SN = "2930"
+MODEL_SECOND_GEN_SN = "2950"
+
+SN_TO_MODEL = {
+    MODEL_WAVE_SN: "Wave",
+    MODEL_MINI_SN: "Wave Mini",
+    MODEL_PLUS_SN: "Wave Plus",
+    MODEL_SECOND_GEN_SN: "Wave 2nd gen"
+}
+
+
 @dataclasses.dataclass()
 class DeviceInfo:
     serial_number: str
@@ -136,6 +151,10 @@ class DeviceInfo:
 
     def __str__(self) -> str:
         return f"{self.room}#{self.serial_number}"
+
+    @property
+    def model_name(self) -> str:
+        return SN_TO_MODEL[self.serial_number[:4]]
 
     def _update_from_sample(self, sample: Sample) -> None:
         self.room = sample.room
@@ -146,7 +165,7 @@ class DeviceInfo:
         return cls(sn, sample.room, sample.location)
 
 
-class DeviceState:
+class DeviceState(EventSystem):
     info: DeviceInfo
     values: Dict[str, SensorValue]
 
@@ -190,9 +209,10 @@ class DeviceState:
             return False
 
         self._update_from_sample(sample)
+        self.dispatch_async("updated")
 
 
-class AirthingsAPI:
+class AirthingsAPI(EventSystem):
     session: aiohttp.ClientSession
     auth: AuthManager
 
@@ -200,6 +220,8 @@ class AirthingsAPI:
     __states_lock: asyncio.Lock
 
     def __init__(self, session: aiohttp.ClientSession, auth: AuthManager) -> None:
+        super().__init__()
+
         self.session = session
         self.auth = auth
 
@@ -248,7 +270,11 @@ class AirthingsAPI:
             params["to"] = _format_utc_dt(to_dt)
 
         data = await self._request("get", LATEST_SAMPLES_URL_TEMPLATE.format(sn=sn), params=params)
-        return Sample.from_payload(data)
+        try:
+            return Sample.from_payload(data)
+        except Exception:
+            logger.exception("failed to construct sample from payload: %s", data)
+            raise
 
     async def get_state(self, sn: str) -> DeviceState:
         update = False
@@ -264,17 +290,26 @@ class AirthingsAPI:
 
         return v
 
-    async def get_states(self) -> Tuple[DeviceState, ...]:
-        serial_numbers = await self.get_serial_numbers()
-        return await asyncio.gather(*(self.get_state(sn) for sn in serial_numbers))
-
     async def __update_serial_numbers_once(self) -> None:
+        logger.debug("updating serial numbers")
         sns_now = set(await self.get_serial_numbers())
         sns_before = set(self.__states.keys())
 
         added_sns = sns_now - sns_before
+        for sn in added_sns:
+            state = await self.get_state(sn)
+            logger.info("found new state: %s", state)
+            self.dispatch_async("device_added", state)
+
         removed_sns = sns_before - sns_now
-        # TODO dispatch ADDED and REMOVED events
+        if not removed_sns:
+            return
+
+        async with self.__states_lock:
+            for sn in removed_sns:
+                state = self.__states.pop(sn)
+                self.dispatch_async("device_removed", state)
+                state.dispatch_async("removed")
 
     async def __update_serial_numbers_loop(self, interval: timedelta) -> None:
         interval_s = interval.total_seconds()
@@ -287,9 +322,9 @@ class AirthingsAPI:
             await asyncio.sleep(interval_s)
 
     async def __update_states_once(self) -> None:
+        logger.debug("updating states")
         for state in self.__states.values():
             await state.update()
-            # TODO device should emit UPDATED event
 
     async def __update_states_loop(self, interval: timedelta) -> None:
         interval_s = interval.total_seconds()

@@ -1,0 +1,2 @@
+# Airthings Home Assistant integration
+
