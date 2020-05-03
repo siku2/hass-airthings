@@ -21,6 +21,25 @@ class EventSystem:
 
         listeners.append(callback)
 
+    def remove_listener(self, name: str, callback: Callable) -> bool:
+        try:
+            listeners = self.__topics[name]
+        except KeyError:
+            return False
+
+        try:
+            listeners.remove(callback)
+        except ValueError:
+            return False
+
+        return True
+
+    def remove_listeners(self, name: str) -> None:
+        try:
+            del self.__topics[name]
+        except KeyError:
+            pass
+
     async def __dispatch_to(self, f: Callable, args, kwargs) -> None:
         try:
             await f(*args, **kwargs)

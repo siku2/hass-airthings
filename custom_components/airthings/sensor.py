@@ -26,8 +26,10 @@ async def async_setup_entry(hass: HomeAssistantType, _config_entry: ConfigEntry,
     return True
 
 
-async def async_unload_entry(_hass: HomeAssistantType, _config_entry: ConfigEntry) -> bool:
-    # TODO unsubscribe from device_added
+async def async_unload_entry(hass: HomeAssistantType, _config_entry: ConfigEntry) -> bool:
+    api: AirthingsAPI = hass.data[DOMAIN][KEY_API]
+    api.remove_listeners("device_added")
+
     return True
 
 
