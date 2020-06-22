@@ -22,9 +22,7 @@ class HTTPError(AirthingsException):
 
     @classmethod
     def from_response(cls, resp: aiohttp.ClientResponse, payload: JSONObj):
-        return cls(response_payload=payload,
-                   status=resp.status,
-                   reason=resp.reason)
+        return cls(response_payload=payload, status=resp.status, reason=resp.reason)
 
 
 @dataclasses.dataclass()
@@ -48,7 +46,6 @@ class APIError(AirthingsException):
         except KeyError:
             return http_error
         else:
-            return cls(name=name,
-                       description=description,
-                       code=code,
-                       http_error=http_error)
+            return cls(
+                name=name, description=description, code=code, http_error=http_error
+            )

@@ -24,20 +24,25 @@ class AirthingsConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(self, user_input: dict = None) -> dict:
         errors = {}
         if user_input is not None:
-            if await check_login(user_input[CONF_API_KEY], user_input[CONF_EMAIL], user_input[CONF_PASSWORD]):
+            if await check_login(
+                user_input[CONF_API_KEY],
+                user_input[CONF_EMAIL],
+                user_input[CONF_PASSWORD],
+            ):
                 return self.async_create_entry(
-                    title=user_input[CONF_EMAIL],
-                    data=user_input,
+                    title=user_input[CONF_EMAIL], data=user_input,
                 )
             else:
                 errors["base"] = ERROR_LOGIN_FAILED
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_API_KEY): str,
-                vol.Required(CONF_EMAIL): str,
-                vol.Required(CONF_PASSWORD): str,
-            }),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_API_KEY): str,
+                    vol.Required(CONF_EMAIL): str,
+                    vol.Required(CONF_PASSWORD): str,
+                }
+            ),
             errors=errors,
         )

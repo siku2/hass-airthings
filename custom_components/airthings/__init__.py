@@ -18,8 +18,10 @@ async def async_setup(hass: HomeAssistantType, _config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool:
     try:
-        api = await AirthingsAPI.login(entry.data[CONF_API_KEY],
-                                       LoginDetails(entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]))
+        api = await AirthingsAPI.login(
+            entry.data[CONF_API_KEY],
+            LoginDetails(entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD]),
+        )
     except Exception:
         logger.exception("login failed")
         return False
@@ -27,9 +29,11 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
     hass.data[DOMAIN][KEY_API] = api
 
     for platform in PLATFORMS:
-        _ = hass.async_add_job(hass.config_entries.async_forward_entry_setup, entry, platform)
+        _ = hass.async_add_job(
+            hass.config_entries.async_forward_entry_setup, entry, platform
+        )
 
-    api.start_auto_update(timedelta(minutes=10), timedelta(hours=3))
+    api.start_auto_update(timedelta(minutes=10))
 
     return True
 
