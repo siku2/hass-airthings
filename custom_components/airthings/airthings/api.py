@@ -52,6 +52,9 @@ class SensorValue:
     value: float
     timestamp: datetime
 
+    def __post_init__(self) -> None:
+        self.value = round(self.value, 2)
+
     def __str__(self) -> str:
         return str(self.value)
 
