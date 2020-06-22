@@ -114,7 +114,7 @@ class AirthingsSensor(CommonSensor):
         if sensor is None:
             return None
 
-        return self._sensor.mult * sensor.value
+        return round(self._sensor.mult * sensor.value, 2)
 
     @property
     def device_state_attributes(self) -> Optional[Dict[str, Any]]:
@@ -123,7 +123,7 @@ class AirthingsSensor(CommonSensor):
             return None
 
         return {
-            "is_alert": sensor.is_alert,
+            "alert": "yes" if sensor.is_alert else "no",
             "thresholds": sensor.thresholds,
         }
 
