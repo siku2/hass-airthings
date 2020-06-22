@@ -49,7 +49,9 @@ class TokenDetails:
         return datetime.now() >= self.expires_at
 
 
-async def refresh_request(session: aiohttp.ClientSession, token_details: TokenDetails) -> TokenDetails:
+async def refresh_request(
+    session: aiohttp.ClientSession, token_details: TokenDetails
+) -> TokenDetails:
     logger.debug("performing token refresh request with %s", token_details)
     body = {"refreshToken": token_details.refresh_token}
     async with session.post(REFRESH_URL, json=body) as resp:
@@ -60,7 +62,9 @@ async def refresh_request(session: aiohttp.ClientSession, token_details: TokenDe
     return TokenDetails.from_payload(data)
 
 
-async def login_request(session: aiohttp.ClientSession, login: LoginDetails) -> TokenDetails:
+async def login_request(
+    session: aiohttp.ClientSession, login: LoginDetails
+) -> TokenDetails:
     logger.debug("performing login request with %s", login)
     async with session.post(LOGIN_URL, json=login._payload()) as resp:
         data = await resp.json()
@@ -75,7 +79,9 @@ class AuthManager:
     _login: LoginDetails
     _token: Optional[TokenDetails]
 
-    def __init__(self, session: aiohttp.ClientSession, login_details: LoginDetails) -> None:
+    def __init__(
+        self, session: aiohttp.ClientSession, login_details: LoginDetails
+    ) -> None:
         self.session = session
         self._token = None
         self._login = login_details
