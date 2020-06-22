@@ -29,7 +29,7 @@ async def async_setup_entry(
     api: AirthingsAPI = hass.data[DOMAIN][KEY_API]
 
     async def on_device_added(device: DeviceState) -> None:
-        logger.debug("setting up sensors for device: %s", device)
+        logger.debug("setting up sensors for device: %s", device.serial_number)
         add_entities(create_sensors(device))
 
     api.add_listener("device_added", on_device_added)
@@ -253,9 +253,10 @@ def create_sensors(device: DeviceState) -> List[AirthingsSensor]:
         "manufacturer": "Airthings AS",
         "model": device.info.model_name,
     }
-    sensor_entities_it = (
-        AirthingsSensor(device, sensor, device_info)
+    sensors = [
+        AirthingsSensor(device, device_info, sensor)
         for sensor in _iter_sensor_infos(device.info.model_type)
-    )
-    return [*sensor_entities_it, BatterySensor(device, device_info)]
+    ]
+    sensors.append(BatterySensor(device, device_info))
+    return sensors
 
