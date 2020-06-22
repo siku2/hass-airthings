@@ -37,7 +37,7 @@ class Sensor:
             value=payload["value"],
             provided_unit=payload["providedUnit"],
             preferred_unit=payload["preferredUnit"],
-            is_alter=payload["isAlert"],
+            is_alert=payload["isAlert"],
             thresholds=payload["thresholds"],
         )
 
@@ -47,7 +47,7 @@ MODEL_TYPE_MINI = "waveMini"
 MODEL_TYPE_PLUS = "wavePlus"
 MODEL_TYPE_WAVE2 = "wave2"
 
-MODEL_TYPE_TO_NAME = {
+_MODEL_TYPE_TO_NAME = {
     MODEL_TYPE_WAVE: "Wave",
     MODEL_TYPE_MINI: "Wave Mini",
     MODEL_TYPE_PLUS: "Wave Plus",
@@ -67,7 +67,7 @@ class Device:
     segment_start: datetime
     latest_sample: datetime
     sensors: List[Sensor]
-    battery_percentage: int
+    battery_percentage: Optional[int]
     rssi: Optional[int]
     model_type: str
     signal_quality: str
@@ -86,7 +86,7 @@ class Device:
             segment_start=_parse_utc_dt(payload["segmentStart"]),
             latest_sample=_parse_utc_dt(payload["latestSample"]),
             sensors=[Sensor.from_payload(p) for p in payload["currentSensorValues"]],
-            battery_percentage=payload["batteryPercentage"],
+            battery_percentage=payload.get("batteryPercentage"),
             rssi=payload.get("rssi"),
             model_type=payload["type"],
             signal_quality=payload["signalQuality"],
@@ -96,7 +96,7 @@ class Device:
     @property
     def model_name(self) -> str:
         try:
-            MODEL_TYPE_TO_NAME[self.model_type]
+            return _MODEL_TYPE_TO_NAME[self.model_type]
         except KeyError:
             return self.model_type.title()
 
@@ -145,7 +145,7 @@ class Me:
             name=payload["name"],
             email=payload["email"],
             preferences=Preferences.from_payload(payload["preferences"]),
-            devices=Preferences.from_payload(payload["devices"]),
+            devices=[Device.from_payload(p) for p in payload["devices"]],
         )
 
     def get_device(self, sn: str) -> Device:

@@ -195,7 +195,7 @@ _PLUS_SENSORS = (
 
 def _iter_sensor_infos(model_type: str) -> Iterator[SensorInfo]:
     yield from _BASIC_SENSORS
-    if model_type != models.MODEL_MINI:
+    if model_type != models.MODEL_TYPE_MINI:
         yield from _RADON_SENSORS
 
     if model_type in (models.MODEL_TYPE_MINI, models.MODEL_TYPE_PLUS):

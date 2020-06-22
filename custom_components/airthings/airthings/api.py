@@ -40,14 +40,14 @@ class DeviceState(EventSystem):
 
     @property
     def serial_number(self) -> str:
-        self.info.serial_number
+        return self.info.serial_number
 
     @property
     def sensors(self) -> List[models.Sensor]:
-        self.info.sensors
+        return self.info.sensors
 
     def get_sensor(self, sensor_type: str) -> Optional[models.Sensor]:
-        self.info.get_sensor(sensor_type)
+        return self.info.get_sensor(sensor_type)
 
     async def _update(self, info: models.Device) -> bool:
         self.info = info
@@ -150,7 +150,7 @@ class AirthingsAPI(EventSystem):
 
     @property
     def _auto_update_running(self) -> bool:
-        return all(not t.done() for t in self.__update_tasks)
+        return any(not t.done() for t in self.__update_tasks)
 
     def start_auto_update(self, update_interval: timedelta) -> None:
         if self._auto_update_running:
