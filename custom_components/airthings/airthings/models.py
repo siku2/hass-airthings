@@ -42,11 +42,16 @@ class Sensor:
         )
 
 
+MODEL_TYPE_WAVE = "wave"
+MODEL_TYPE_MINI = "waveMini"
+MODEL_TYPE_PLUS = "wavePlus"
+MODEL_TYPE_WAVE2 = "wave2"
+
 MODEL_TYPE_TO_NAME = {
-    "wave": "Wave",
-    "waveMini": "Wave Mini",
-    "wavePlus": "Wave Plus",
-    "wave2": "Wave 2nd gen",
+    MODEL_TYPE_WAVE: "Wave",
+    MODEL_TYPE_MINI: "Wave Mini",
+    MODEL_TYPE_PLUS: "Wave Plus",
+    MODEL_TYPE_WAVE2: "Wave 2nd gen",
 }
 
 

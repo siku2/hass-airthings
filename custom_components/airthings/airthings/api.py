@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from datetime import timedelta
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import aiohttp
 
@@ -39,8 +39,15 @@ class DeviceState(EventSystem):
         return self
 
     @property
+    def serial_number(self) -> str:
+        self.info.serial_number
+
+    @property
     def sensors(self) -> List[models.Sensor]:
         self.info.sensors
+
+    def get_sensor(self, sensor_type: str) -> Optional[models.Sensor]:
+        self.info.get_sensor(sensor_type)
 
     async def _update(self, info: models.Device) -> bool:
         self.info = info
