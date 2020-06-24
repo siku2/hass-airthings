@@ -116,7 +116,10 @@ class Preferences:
     rf_region: str
     pro_user: bool
     user_id: uuid.UUID
-    language: str
+    language: Optional[str]
+    """
+        `None` if the user hasn't configured a language.
+    """
 
     @classmethod
     def from_payload(cls, payload: JSONObj):
@@ -128,7 +131,7 @@ class Preferences:
             rf_region=payload["rfRegion"],
             pro_user=payload["proUser"],
             user_id=uuid.UUID(payload["userId"]),
-            language=payload["language"],
+            language=payload.get("language"),
         )
 
 
@@ -136,7 +139,7 @@ class Preferences:
 class Me:
     name: str
     email: str
-    preferences: Preferences
+    # preferences: Preferences
     devices: List[Device]
 
     @classmethod
@@ -144,7 +147,7 @@ class Me:
         return cls(
             name=payload["name"],
             email=payload["email"],
-            preferences=Preferences.from_payload(payload["preferences"]),
+            # preferences=Preferences.from_payload(payload["preferences"]),
             devices=[Device.from_payload(p) for p in payload["devices"]],
         )
 
