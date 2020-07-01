@@ -29,15 +29,10 @@ async def async_setup_entry(hass: HomeAssistantType, entry: ConfigEntry) -> bool
 
     hass.data[DOMAIN][KEY_API] = api
 
-    setup_fs = []
     for platform in PLATFORMS:
-        fs = hass.async_add_job(
+        hass.async_add_job(
             hass.config_entries.async_forward_entry_setup, entry, platform
         )
-        setup_fs.append(fs)
-
-    logger.debug("waiting for platform setups to finish")
-    await asyncio.gather(*setup_fs)
 
     logger.info("starting auto update")
     api.start_auto_update(timedelta(minutes=10))
