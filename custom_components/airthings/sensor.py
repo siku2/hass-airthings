@@ -32,12 +32,12 @@ async def async_setup_entry(
         logger.debug("setting up sensors for device: %s", device.serial_number)
         add_entities(create_sensors(device))
 
-    # add already tracked devices
+    # get snapshot of already tracked devices so we can immediately subscribe without missing any.
     tracked_devices = await api.get_tracked_devices()
+    api.add_listener("device_added", on_device_added)
+
     for device in tracked_devices:
         await on_device_added(device)
-
-    api.add_listener("device_added", on_device_added)
 
     return True
 
