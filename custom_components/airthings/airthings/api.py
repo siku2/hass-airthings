@@ -32,6 +32,9 @@ class DeviceState(EventSystem):
     def __repr__(self) -> str:
         return f"{type(self).__name__}({self.info!r})"
 
+    def __str__(self) -> str:
+        return f"<{self.info.model_name} {self.serial_number}>"
+
     @classmethod
     def _from_device(cls, info: models.Device):
         self = cls()
@@ -104,6 +107,10 @@ class AirthingsAPI(EventSystem):
         except Exception:
             logger.exception("failed to construct Me from payload: %s", data)
             raise
+
+    async def get_tracked_devices(self) -> List[DeviceState]:
+        async with self.__states_lock:
+            return list(self.__states.values())
 
     async def __diff_devices(self, devices: List[models.Device]) -> None:
         states = self.__states

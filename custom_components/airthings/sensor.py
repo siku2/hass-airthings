@@ -34,6 +34,14 @@ async def async_setup_entry(
 
     api.add_listener("device_added", on_device_added)
 
+    # just a little sanity check
+    tracked_devices = await api.get_tracked_devices()
+    if tracked_devices:
+        logger.error(
+            "sensor platform setup after API is already tracking devices: %s",
+            tracked_devices,
+        )
+
     return True
 
 
