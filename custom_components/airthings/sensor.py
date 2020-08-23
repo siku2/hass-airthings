@@ -192,7 +192,7 @@ _PLUS_SENSORS = (
     SensorInfo(
         "co2",
         "CO2",
-        icon="mdi:periodic-table-co2",
+        icon="mdi:molecule-co2",
         unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,
     ),
 )
