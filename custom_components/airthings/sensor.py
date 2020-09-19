@@ -12,7 +12,7 @@ from homeassistant.const import (
     DEVICE_CLASS_BATTERY,
     PRESSURE_MBAR,
     TEMP_CELSIUS,
-    UNIT_PERCENTAGE,
+    PERCENTAGE,
 )
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.typing import HomeAssistantType
@@ -153,7 +153,7 @@ _BASIC_SENSORS = (
     SensorInfo(
         "humidity",
         "Humidity",
-        unit_of_measurement=UNIT_PERCENTAGE,
+        unit_of_measurement=PERCENTAGE,
         device_class=DEVICE_CLASS_HUMIDITY,
     ),
     SensorInfo(
@@ -243,7 +243,7 @@ class BatterySensor(CommonSensor):
 
     @property
     def unit_of_measurement(self) -> Optional[str]:
-        return UNIT_PERCENTAGE
+        return PERCENTAGE
 
     async def _on_updated(self) -> None:
         self.__battery_precentage = self._state.info.battery_percentage
