@@ -1,6 +1,7 @@
 {
   "domain": "airthings",
   "name": "Airthings",
+  "version": "0.2.5",
   "config_flow": true,
   "dependencies": [],
   "codeowners": [
