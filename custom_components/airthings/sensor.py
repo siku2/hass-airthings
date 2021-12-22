@@ -122,7 +122,7 @@ class AirthingsSensor(CommonSensor):
         return round(self._sensor.mult * sensor.value, 2)
 
     @property
-    def device_state_attributes(self) -> Optional[Dict[str, Any]]:
+    def extra_state_attributes(self) -> Optional[Dict[str, Any]]:
         sensor = self.__current_sensor
         if sensor is None:
             return None
@@ -230,7 +230,7 @@ class BatterySensor(CommonSensor):
         return self.__battery_precentage
 
     @property
-    def device_state_attributes(self) -> Optional[Dict[str, Any]]:
+    def extra_state_attributes(self) -> Optional[Dict[str, Any]]:
         info = self._state.info
         return {
             "latest_sample": info.latest_sample,
